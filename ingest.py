@@ -1,14 +1,19 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 
-# Load PDF
+# --------------------
+# 1. Load PDF
+# --------------------
 loader = PyPDFLoader("data/academic calender 2026.pdf")
 documents = loader.load()
 
 print(f"Pages loaded: {len(documents)}")
 
-# Split into chunks
+# --------------------
+# 2. Split into chunks
+# --------------------
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200
@@ -18,24 +23,22 @@ chunks = splitter.split_documents(documents)
 
 print(f"Chunks created: {len(chunks)}")
 
-print("\nFirst Chunk:\n")
-print(chunks[0].page_content)
-
-# Create embedding model
+# --------------------
+# 3. Create embedding model
+# --------------------
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-# Convert first chunk to vector
-vector = embedding_model.embed_query(
-    chunks[0].page_content
+# --------------------
+# 4. Store in ChromaDB
+# --------------------
+db = Chroma.from_documents(
+    documents=chunks,
+    embedding=embedding_model,
+    persist_directory="chroma_db"   # <-- saves locally
 )
 
-print(f"\nVector length: {len(vector)}")
+db.persist()
 
-# Convert user query to vector
-query_vector = embedding_model.embed_query(
-    "When is my database lecture?"
-)
-
-print(f"Query vector size: {len(query_vector)}")
+print("\nVector DB created and saved successfully!")
