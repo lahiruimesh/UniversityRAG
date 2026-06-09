@@ -20,7 +20,7 @@ db = Chroma(
 # -------------------------
 # 3. User question
 # -------------------------
-query = "When is my exam schedule?"
+query = "can you explain me lab assignment?"
 
 # -------------------------
 # 4. Retrieve relevant chunks
