@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pdfplumber
+pillow
+pytesseract
+chromadb
+sentence-transformers
+langchain
+langchain-community
+langchain-text-splitters
+llama-cpp-python

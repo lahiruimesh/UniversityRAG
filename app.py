@@ -1,66 +1,68 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from llama_cpp import Llama
 from langchain_community.vectorstores import Chroma
-from langchain_community.llms import Ollama
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
-app = FastAPI(
-    title="Faculty AI Assistant"
-)
+app = FastAPI(title="University RAG Assistant")
 
-# -----------------------
-# Load once
-# -----------------------
-
+# -------------------
+# EMBEDDINGS
+# -------------------
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
+# -------------------
+# VECTOR DB
+# -------------------
 db = Chroma(
     persist_directory="chroma_db",
     embedding_function=embedding_model
 )
 
-llm = Ollama(model="llama3")
+# -------------------
+# LLM (llama.cpp)
+# -------------------
+llm = Llama(
+    model_path="models/llama3.q4.gguf",
+    n_ctx=4096,
+    n_threads=6
+)
 
-# -----------------------
-# Request schema
-# -----------------------
-
-class QuestionRequest(BaseModel):
+# -------------------
+# REQUEST MODEL
+# -------------------
+class Question(BaseModel):
     question: str
 
-# -----------------------
-# Health Check
-# -----------------------
 
+# -------------------
+# HEALTH CHECK
+# -------------------
 @app.get("/")
-def root():
-    return {"message": "Faculty AI Assistant Running"}
+def home():
+    return {"status": "RAG system running"}
 
-# -----------------------
-# Ask Endpoint
-# -----------------------
-
+# -------------------
+# ASK API
+# -------------------
 @app.post("/ask")
-def ask_question(request: QuestionRequest):
+def ask(req: Question):
 
-    query = request.question
+    query = req.question
 
-    results = db.similarity_search(query, k=8)
+    # retrieval
+    results = db.similarity_search(query, k=3)
+    context = "\n\n".join([r.page_content for r in results])
 
-    context = "\n\n".join(
-        [doc.page_content for doc in results]
-    )
-
+    # prompt
     prompt = f"""
 You are a university assistant.
 
-Answer ONLY using the provided context.
-
-If the answer is not found in the context,
-say "I don't know".
+Use ONLY context below.
+If not found, say "I don't know".
 
 Context:
 {context}
@@ -71,9 +73,17 @@ Question:
 Answer:
 """
 
-    answer = llm.invoke(prompt)
+    # inference
+    response = llm(
+        prompt,
+        max_tokens=300,
+        temperature=0.2,
+        stop=["</s>"]
+    )
+
+    answer = response["choices"][0]["text"]
 
     return {
         "question": query,
-        "answer": answer
+        "answer": answer.strip()
     }

@@ -5,3 +5,4 @@ venv/
 # Data Folders
 data/
 chroma_db/
+models/

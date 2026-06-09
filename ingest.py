@@ -1,4 +1,5 @@
 import os
+import shutil
 import pdfplumber
 from PIL import Image
 import pytesseract
@@ -88,10 +89,15 @@ embedding_model = HuggingFaceEmbeddings(
 # --------------------
 # 4. Store in ChromaDB
 # --------------------
+persist_directory = "chroma_db"
+
+if os.path.exists(persist_directory):
+    shutil.rmtree(persist_directory)
+
 db = Chroma.from_documents(
     documents=chunks,
     embedding=embedding_model,
-    persist_directory="chroma_db"
+    persist_directory=persist_directory
 )
 
 print("\n Vector DB created successfully!")

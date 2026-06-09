@@ -1,6 +1,8 @@
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
+#from langchain_community.llms import Ollama
+
+from llama_cpp import Llama
 
 # -------------------------
 # 1. Embedding model
@@ -20,7 +22,7 @@ db = Chroma(
 # -------------------------
 # 3. User question
 # -------------------------
-query = "can you explain me lab assignment?"
+query = "can you explain how to apply for hostel in university?"
 
 # -------------------------
 # 4. Retrieve relevant chunks
@@ -33,7 +35,11 @@ context = "\n\n".join([doc.page_content for doc in results])
 # -------------------------
 # 5. Load LLaMA 3
 # -------------------------
-llm = Ollama(model="llama3")
+llm = Llama(
+    model_path="models/Llama3.3-8B-Instruct-Thinking-Heretic-Uncensored-Claude-4.5-Opus-High-Reasoning.i1-Q4_K_M (3).gguf",
+    n_ctx=4096,
+    n_threads=6
+)
 
 # -------------------------
 # 6. Create prompt
@@ -56,10 +62,17 @@ Answer in a clear and short way:
 # -------------------------
 # 7. Get response
 # -------------------------
-response = llm.invoke(prompt)
+response = llm(
+    prompt,
+    max_tokens=300,
+    temperature=0.2,
+    stop=["</s>"]
+)
+
+answer = response["choices"][0]["text"]
 
 # -------------------------
 # 8. Output
 # -------------------------
 print("\n===== AI ANSWER =====\n")
-print(response)
+print(answer.strip())
